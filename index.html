@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Qazo namozlarim</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  * { box-sizing: border-box; touch-action: manipulation; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--tg-theme-bg-color, #f4f5f7);
+    color: var(--tg-theme-text-color, #222);
+    margin: 0;
+    padding: 16px;
+  }
+  .card {
+    background: var(--tg-theme-secondary-bg-color, #fff);
+    border-radius: 16px;
+    padding: 20px;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; text-align: center; }
+  .sub { font-size: 12px; color: #999; text-align: center; margin-bottom: 18px; }
+
+  .progressWrap { margin-bottom: 20px; }
+  .progressLabel {
+    display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 6px;
+  }
+  .progressLabel b { color: #4f7cff; }
+  .progressBar {
+    width: 100%; height: 10px; background: #eef1f5; border-radius: 6px; overflow: hidden;
+  }
+  .progressFill {
+    height: 100%; background: #4f7cff; border-radius: 6px; transition: width 0.3s;
+  }
+
+  .prayerRow {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0; border-bottom: 1px solid #f0f0f0; gap: 10px;
+  }
+  .prayerRow:last-child { border-bottom: none; }
+  .pName { font-size: 15px; font-weight: 600; flex: 1; }
+  .pCount {
+    font-size: 22px; font-weight: 700; color: #4f7cff; min-width: 54px; text-align: center;
+    cursor: pointer; border-bottom: 1px dashed #ccd3e0;
+  }
+  .pCount.zero { color: #2ecc71; }
+  .pBtns { display: flex; gap: 6px; }
+  .pBtn {
+    width: 36px; height: 36px; border-radius: 10px; border: none; font-size: 18px;
+    font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .pBtn.minus { background: #4f7cff; color: #fff; }
+  .pBtn.plus { background: #eef1f5; color: #888; }
+
+  .status { font-size: 12px; text-align: center; margin-top: 14px; min-height: 16px; font-weight: 600; }
+  .status.ok { color: #2ecc71; }
+  .status.fail { color: #e74c3c; }
+
+  .settingsLink {
+    display: block; text-align: center; margin-top: 16px; font-size: 12px; color: #999;
+    background: none; border: none; cursor: pointer; width: 100%;
+  }
+
+  /* Setup / edit overlay */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;
+  }
+  .overlay.hidden { display: none; }
+  .overlayCard {
+    background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px;
+  }
+  .overlayCard h2 { font-size: 16px; margin: 0 0 14px; text-align: center; }
+  .setupRow {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px;
+  }
+  .setupRow label { font-size: 14px; flex: 1; }
+  .setupRow input {
+    width: 100px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 16px; text-align: right; background: #f7f8fa; color: #222;
+  }
+  .dateCalc { background: #f7f8fa; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+  .dateCalcHint { font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; }
+  .dateCalc .setupRow input[type="date"] { width: 150px; font-size: 14px; }
+  .calcBtn {
+    margin-top: 4px; background: #e8edff !important; color: #4f7cff !important;
+    border-radius: 8px; padding: 10px; font-weight: 600;
+  }
+  .divider { height: 1px; background: #eee; margin: 14px 0; }
+  .overlayBtn {
+    width: 100%; padding: 12px; border: none; border-radius: 10px; background: #4f7cff;
+    color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px;
+  }
+  .overlayBtnSecondary {
+    width: 100%; padding: 10px; border: none; background: none; color: #999;
+    font-size: 13px; cursor: pointer; margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🕌 Qazo namozlarim</h1>
+  <div class="sub">Har o'qiganingizda "−1" tugmasini bosing</div>
+
+  <div class="progressWrap">
+    <div class="progressLabel">
+      <span>Jami qoldi: <b id="totalRemaining">0</b></span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progressBar"><div class="progressFill" id="progressFill" style="width:0%"></div></div>
+  </div>
+
+  <div id="prayerList"></div>
+
+  <div class="status" id="statusMsg"></div>
+  <button class="settingsLink" onclick="openSetup(true)">⚙️ Sonlarni qayta sozlash</button>
+  <button class="settingsLink" onclick="exportPDF()">📄 PDF sifatida saqlash</button>
+</div>
+
+<div class="overlay hidden" id="setupOverlay">
+  <div class="overlayCard">
+    <h2>Qazo namozlar sonini kiriting</h2>
+
+    <div class="dateCalc">
+      <div class="dateCalcHint">Aniq sonni bilmasangiz — ikkita sanani kiriting, kunlar sonidan avtomatik hisoblab beramiz (har kunga 5 vaqt):</div>
+      <div class="setupRow">
+        <label>Farz bo'lgan sana</label>
+        <input type="date" id="calcStart">
+      </div>
+      <div class="setupRow">
+        <label>Muntazam boshlagan sana</label>
+        <input type="date" id="calcEnd">
+      </div>
+      <button class="overlayBtnSecondary calcBtn" onclick="calcFromDates()">📅 Hisoblash va to'ldirish</button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div id="setupFields"></div>
+    <button class="overlayBtn" onclick="saveSetup()">Saqlash</button>
+    <button class="overlayBtnSecondary" id="cancelSetupBtn" onclick="closeSetup()" style="display:none;">Bekor qilish</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="editOverlay">
+  <div class="overlayCard">
+    <h2 id="editLabel">Qolgan sonni kiriting</h2>
+    <input type="number" inputmode="numeric" id="editInput" style="width:100%; padding:10px; font-size:16px; text-align:center; border:1px solid #ddd; border-radius:8px; margin-bottom:10px;">
+    <button class="overlayBtn" onclick="saveEdit()">Saqlash</button>
+    <button class="overlayBtnSecondary" onclick="closeEdit()">Bekor qilish</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="pdfOverlay">
+  <div class="overlayCard">
+    <h2>PDF tayyor</h2>
+    <p style="font-size:13px; color:#666; text-align:center; margin-bottom:16px;">
+      Pastdagi havolani bosing — brauzeringiz uni ochadi yoki saqlaydi.
+    </p>
+    <a id="pdfLink" href="#" download="qazo-namoz-hisobot.pdf" target="_blank"
+       class="overlayBtn" style="display:block; text-align:center; text-decoration:none;">
+      📄 PDF faylni ochish / yuklab olish
+    </a>
+    <button class="overlayBtnSecondary" onclick="closePdfOverlay()">Yopish</button>
+  </div>
+</div>
+
+<script>
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.ready(); tg.expand(); }
+
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function (event) {
+  const tag = event.target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+  const now = Date.now();
+  if (now - lastTouchEnd <= 350) event.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+document.addEventListener('gesturestart', function (event) { event.preventDefault(); });
+
+const PRAYERS = [
+  { key: "bomdod", name: "Bomdod" },
+  { key: "peshin", name: "Peshin" },
+  { key: "asr", name: "Asr" },
+  { key: "shom", name: "Shom" },
+  { key: "xufton", name: "Xufton" }
+];
+
+const hasCloud = !!(tg && tg.CloudStorage);
+
+function cloudGet(key) {
+  return new Promise((resolve) => {
+    if (!hasCloud) return resolve(localStorage.getItem(key));
+    tg.CloudStorage.getItem(key, (err, value) => {
+      if (err) resolve(localStorage.getItem(key));
+      else resolve(value || null);
+    });
+  });
+}
+function cloudSet(key, value) {
+  return new Promise((resolve, reject) => {
+    try { localStorage.setItem(key, value); } catch(e) {}
+    if (!hasCloud) return resolve(true);
+    tg.CloudStorage.setItem(key, value, (err, success) => {
+      if (err || !success) reject(new Error(err || "CloudStorage rad etdi"));
+      else resolve(true);
+    });
+  });
+}
+
+function origKey(k) { return "qazo_orig_" + k; }
+function remKey(k) { return "qazo_rem_" + k; }
+
+let data = {}; // { bomdod: {orig, rem}, ... }
+
+function setStatus(msg, cls) {
+  const el = document.getElementById("statusMsg");
+  el.textContent = msg;
+  el.className = "status" + (cls ? " " + cls : "");
+}
+
+async function loadAll() {
+  for (const p of PRAYERS) {
+    const [origRaw, remRaw] = await Promise.all([cloudGet(origKey(p.key)), cloudGet(remKey(p.key))]);
+    data[p.key] = {
+      orig: origRaw !== null ? Number(origRaw) : null,
+      rem: remRaw !== null ? Number(remRaw) : null
+    };
+  }
+}
+
+function needsSetup() {
+  return PRAYERS.some(p => data[p.key].orig === null);
+}
+
+function render() {
+  const list = document.getElementById("prayerList");
+  list.innerHTML = "";
+  let totalOrig = 0, totalRem = 0;
+
+  PRAYERS.forEach(p => {
+    const orig = data[p.key].orig || 0;
+    const rem = data[p.key].rem !== null ? data[p.key].rem : orig;
+    totalOrig += orig;
+    totalRem += rem;
+
+    const row = document.createElement("div");
+    row.className = "prayerRow";
+    row.innerHTML = `
+      <div class="pName">${p.name}</div>
+      <div class="pCount ${rem === 0 ? 'zero' : ''}" onclick="editCount('${p.key}')">${rem}</div>
+      <div class="pBtns">
+        <button class="pBtn plus" onclick="bump('${p.key}', 1)">+</button>
+        <button class="pBtn minus" onclick="bump('${p.key}', -1)">−1</button>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  document.getElementById("totalRemaining").textContent = totalRem;
+  const pct = totalOrig > 0 ? Math.round(((totalOrig - totalRem) / totalOrig) * 100) : 0;
+  document.getElementById("progressPct").textContent = pct + "%";
+  document.getElementById("progressFill").style.width = pct + "%";
+}
+
+async function persist(key, rem) {
+  setStatus("Saqlanmoqda...", "");
+  try {
+    await cloudSet(remKey(key), String(rem));
+    setStatus("Saqlandi ✓", "ok");
+    setTimeout(() => setStatus("", ""), 1000);
+  } catch (e) {
+    setStatus("Xatolik: " + e.message, "fail");
+  }
+}
+
+async function bump(key, delta) {
+  const orig = data[key].orig || 0;
+  let rem = data[key].rem !== null ? data[key].rem : orig;
+  rem = Math.max(0, rem + delta);
+  data[key].rem = rem;
+  render();
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred("light");
+  await persist(key, rem);
+}
+
+async function editCount(key) {
+  const current = data[key].rem !== null ? data[key].rem : (data[key].orig || 0);
+  const label = PRAYERS.find(p => p.key === key).name;
+  openEditOverlay(key, label, current);
+}
+
+function openEditOverlay(key, label, current) {
+  const overlay = document.getElementById("editOverlay");
+  document.getElementById("editLabel").textContent = label + " — qolgan sonni kiriting";
+  const input = document.getElementById("editInput");
+  input.value = current;
+  overlay.dataset.key = key;
+  overlay.classList.remove("hidden");
+  setTimeout(() => input.focus(), 50);
+}
+
+function closeEdit() {
+  document.getElementById("editOverlay").classList.add("hidden");
+}
+
+async function saveEdit() {
+  const overlay = document.getElementById("editOverlay");
+  const key = overlay.dataset.key;
+  const num = Math.max(0, Number(document.getElementById("editInput").value) || 0);
+  data[key].rem = num;
+  closeEdit();
+  render();
+  await persist(key, num);
+}
+
+function showMsg(text) {
+  if (tg && tg.showAlert) tg.showAlert(text);
+  else alert(text);
+}
+
+function calcFromDates() {
+  const startVal = document.getElementById("calcStart").value;
+  const endVal = document.getElementById("calcEnd").value;
+  if (!startVal || !endVal) {
+    showMsg("Iltimos, ikkala sanani ham kiriting.");
+    return;
+  }
+  const start = new Date(startVal);
+  const end = new Date(endVal);
+  const diffDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 0) {
+    showMsg("Muntazam boshlagan sana farz bo'lgan sanadan keyin bo'lishi kerak.");
+    return;
+  }
+  PRAYERS.forEach(p => {
+    document.getElementById("setup_" + p.key).value = diffDays;
+  });
+}
+
+function openSetup(isEdit) {
+  const overlay = document.getElementById("setupOverlay");
+  const fields = document.getElementById("setupFields");
+  fields.innerHTML = "";
+  PRAYERS.forEach(p => {
+    const val = data[p.key].orig !== null ? data[p.key].orig : "";
+    const row = document.createElement("div");
+    row.className = "setupRow";
+    row.innerHTML = `<label>${p.name}</label><input type="number" inputmode="numeric" id="setup_${p.key}" value="${val}" placeholder="0">`;
+    fields.appendChild(row);
+  });
+  document.getElementById("cancelSetupBtn").style.display = isEdit ? "block" : "none";
+  overlay.classList.remove("hidden");
+}
+
+function closeSetup() {
+  document.getElementById("setupOverlay").classList.add("hidden");
+}
+
+async function saveSetup() {
+  for (const p of PRAYERS) {
+    const input = document.getElementById("setup_" + p.key);
+    const newOrig = Math.max(0, Number(input.value) || 0);
+    const prevOrig = data[p.key].orig;
+    const prevRem = data[p.key].rem;
+
+    let newRem;
+    if (prevOrig === null) {
+      // Birinchi marta sozlanmoqda
+      newRem = newOrig;
+    } else if (newOrig !== prevOrig) {
+      // Foydalanuvchi sonni qo'lda o'zgartirdi — farqni qolganiga ham qo'shib/ayirib qo'yamiz
+      const diff = newOrig - prevOrig;
+      newRem = Math.max(0, (prevRem !== null ? prevRem : prevOrig) + diff);
+    } else {
+      newRem = prevRem !== null ? prevRem : newOrig;
+    }
+
+    data[p.key].orig = newOrig;
+    data[p.key].rem = newRem;
+    await cloudSet(origKey(p.key), String(newOrig));
+    await cloudSet(remKey(p.key), String(newRem));
+  }
+  closeSetup();
+  render();
+  setStatus("Saqlandi ✓", "ok");
+  setTimeout(() => setStatus("", ""), 1200);
+}
+
+function exportPDF() {
+  if (!window.jspdf) {
+    showMsg("PDF kutubxonasi hali yuklanmadi. Internetni tekshirib, birozdan keyin qayta urinib ko'ring.");
+    return;
+  }
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const today = new Date();
+    const dateStr = today.toLocaleDateString("uz-UZ") || today.toISOString().slice(0,10);
+
+    doc.setFontSize(16);
+    doc.text("Qazo namozlarim hisoboti", 20, 20);
+    doc.setFontSize(10);
+    doc.text("Sana: " + dateStr, 20, 28);
+
+    doc.setFontSize(11);
+    let y = 42;
+    doc.text("Namoz", 20, y);
+    doc.text("Boshlang'ich", 90, y);
+    doc.text("Qolgan", 130, y);
+    doc.text("O'qilgan", 165, y);
+    y += 4;
+    doc.line(20, y, 190, y);
+    y += 8;
+
+    let totalOrig = 0, totalRem = 0;
+    PRAYERS.forEach(p => {
+      const orig = data[p.key].orig || 0;
+      const rem = data[p.key].rem !== null ? data[p.key].rem : orig;
+      const done = orig - rem;
+      totalOrig += orig; totalRem += rem;
+      doc.text(p.name, 20, y);
+      doc.text(String(orig), 95, y);
+      doc.text(String(rem), 135, y);
+      doc.text(String(done), 170, y);
+      y += 9;
+    });
+
+    y += 2;
+    doc.line(20, y, 190, y);
+    y += 10;
+    doc.setFontSize(12);
+    doc.text("Jami boshlang'ich: " + totalOrig, 20, y);
+    y += 8;
+    doc.text("Jami qolgan: " + totalRem, 20, y);
+    y += 8;
+    doc.text("Jami o'qilgan: " + (totalOrig - totalRem), 20, y);
+
+    const dataUri = doc.output("datauristring");
+    showPdfLink(dataUri);
+  } catch (e) {
+    showMsg("PDF yaratishda xatolik: " + e.message);
+  }
+}
+
+function showPdfLink(dataUri) {
+  const link = document.getElementById("pdfLink");
+  link.href = dataUri;
+  document.getElementById("pdfOverlay").classList.remove("hidden");
+}
+
+function closePdfOverlay() {
+  document.getElementById("pdfOverlay").classList.add("hidden");
+}
+
+async function init() {
+  await loadAll();
+  if (needsSetup()) {
+    openSetup(false);
+  }
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
