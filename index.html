@@ -49,6 +49,7 @@
 
   * { box-sizing: border-box; touch-action: manipulation; }
   html { -webkit-text-size-adjust: 100%; }
+  html, body { overscroll-behavior-y: none; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: var(--bg);
@@ -122,6 +123,11 @@
   }
   .seg button.on { background: var(--card); color: var(--text); }
   .goalUnit { font-size: 13px; color: var(--hint); }
+  .goalDone {
+    display: none; width: 100%; margin-top: 10px; padding: 11px; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .goal.editing .goalDone { display: block; }
   .goalResult { margin-top: 12px; font-size: 14px; line-height: 1.4; }
   .goalResult b { color: var(--accent); font-size: 16px; }
   .goalResult .small { display: block; font-size: 12px; color: var(--hint); margin-top: 2px; }
@@ -192,7 +198,7 @@
 
   <div id="prayerList"></div>
 
-  <div class="goal">
+  <div class="goal" id="goalBox">
     <div class="goalTitle">🎯 Maqsad</div>
     <div class="goalRow">
       <input type="number" inputmode="numeric" id="goalInput" min="1" placeholder="5">
@@ -202,12 +208,13 @@
         <button type="button" id="unitWeek" onclick="setGoalUnit('week')">haftasiga</button>
       </div>
     </div>
+    <button type="button" class="goalDone" onclick="dismissKeyboard()">✓ Tayyor</button>
     <div class="goalResult" id="goalResult"></div>
   </div>
 
   <div class="status" id="statusMsg"></div>
   <div class="footerBtns">
-    <button class="linkBtn" onclick="openSetup(true)">⚙️ Kunlarni hisoblash</button>
+    <button class="linkBtn" onclick="openSetup(true)">⚙️ Sonlarni sozlash</button>
     <button class="linkBtn" onclick="copyReportText()">📋 Nusxalash</button>
   </div>
 </div>
@@ -223,7 +230,7 @@
         <input type="date" id="calcStart">
       </div>
       <div class="setupRow">
-        <label>Namozni muntazam boshlagan sana</label>
+        <label>Muntazam boshlagan sana</label>
         <input type="date" id="calcEnd">
       </div>
       <button class="overlayBtnSecondary calcBtn" onclick="calcFromDates()">📅 Hisoblash va to'ldirish</button>
@@ -248,7 +255,12 @@
 
 <script>
 const tg = window.Telegram ? window.Telegram.WebApp : null;
-if (tg) { tg.ready(); tg.expand(); }
+if (tg) {
+  tg.ready();
+  tg.expand();
+  // Pastga surganda ilova yopilib ketmasligi uchun (Telegram 7.7+)
+  if (tg.disableVerticalSwipes) tg.disableVerticalSwipes();
+}
 
 /* ---------- Tema (dark mode) ---------- */
 function applyTheme() {
@@ -478,6 +490,28 @@ document.addEventListener("DOMContentLoaded", () => {
     renderGoal(currentTotalRem());
   });
   input.addEventListener("change", saveGoal);
+
+  const box = document.getElementById("goalBox");
+  input.addEventListener("focus", () => {
+    box.classList.add("editing");
+    setTimeout(() => box.scrollIntoView({ block: "center", behavior: "smooth" }), 300);
+  });
+  input.addEventListener("blur", () => box.classList.remove("editing"));
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+});
+
+function dismissKeyboard() {
+  const el = document.activeElement;
+  if (el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA")) el.blur();
+  saveGoal();
+}
+
+// Maydondan tashqariga bosilsa klaviatura yopiladi
+document.addEventListener("click", (e) => {
+  const el = document.activeElement;
+  if (!el || el.tagName !== "INPUT") return;
+  if (e.target === el || e.target.closest("button, label, .overlayCard")) return;
+  el.blur();
 });
 
 /* ---------- Saqlash va tahrirlash ---------- */
