@@ -2,102 +2,175 @@
 <html lang="uz">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Qazo namozlarim</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
+  /* ---------- Ranglar (yorug' rejim) ---------- */
+  :root {
+    --bg: var(--tg-theme-secondary-bg-color, #f4f5f7);
+    --card: var(--tg-theme-bg-color, #ffffff);
+    --text: var(--tg-theme-text-color, #222222);
+    --hint: var(--tg-theme-hint-color, #8a8f98);
+    --accent: #4f7cff;
+    --accent-soft: #e8edff;
+    --track: #e9edf3;
+    --border: #eceef2;
+    --input-bg: #f4f6f9;
+    --input-border: #dfe3ea;
+    --btn-soft: #eef1f5;
+    --btn-soft-text: #6b7280;
+    --green: #2ecc71;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --overlay: rgba(0, 0, 0, 0.45);
+    color-scheme: light;
+  }
+  /* ---------- Tungi rejim ---------- */
+  :root[data-theme="dark"] {
+    --bg: var(--tg-theme-secondary-bg-color, #0f1114);
+    --card: var(--tg-theme-bg-color, #1c1e22);
+    --text: var(--tg-theme-text-color, #eceef2);
+    --hint: var(--tg-theme-hint-color, #8b93a1);
+    --accent: #6b93ff;
+    --accent-soft: rgba(107, 147, 255, 0.16);
+    --track: #2b2f36;
+    --border: #2a2d33;
+    --input-bg: #14161a;
+    --input-border: #33373f;
+    --btn-soft: #2b2f36;
+    --btn-soft-text: #a4abb8;
+    --green: #3ddc84;
+    --orange: #fbb03b;
+    --red: #f26161;
+    --overlay: rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
   * { box-sizing: border-box; touch-action: manipulation; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--tg-theme-bg-color, #f4f5f7);
-    color: var(--tg-theme-text-color, #222);
+    background: var(--bg);
+    color: var(--text);
     margin: 0;
-    padding: 16px;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    line-height: 1.35;
   }
   .card {
-    background: var(--tg-theme-secondary-bg-color, #fff);
-    border-radius: 16px;
-    padding: 20px;
+    background: var(--card);
+    border-radius: 18px;
+    padding: 20px 18px 16px;
     max-width: 440px;
     margin: 0 auto;
   }
-  h1 { font-size: 18px; margin: 0 0 4px; text-align: center; }
-  .sub { font-size: 12px; color: #999; text-align: center; margin-bottom: 18px; }
+  h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; text-align: center; }
+  .sub { font-size: 13px; color: var(--hint); text-align: center; margin-bottom: 20px; }
 
-  .progressWrap { margin-bottom: 20px; }
-  .progressLabel {
-    display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-bottom: 6px;
-  }
-  .progressLabel b { color: #4f7cff; }
-  .progressBar {
-    width: 100%; height: 10px; background: #eef1f5; border-radius: 6px; overflow: hidden;
-  }
-  .progressFill {
-    height: 100%; background: #4f7cff; border-radius: 6px; transition: width 0.3s;
-  }
+  /* ---------- Umumiy taraqqiyot ---------- */
+  .hero { margin-bottom: 8px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+  .heroTop { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .heroPct { font-size: 34px; font-weight: 800; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .heroPct.done { color: var(--green); }
+  .heroInfo { text-align: right; font-size: 13px; color: var(--hint); }
+  .heroInfo b { color: var(--text); font-size: 15px; font-variant-numeric: tabular-nums; }
+  .bar { width: 100%; background: var(--track); border-radius: 999px; overflow: hidden; }
+  .bar.big { height: 14px; }
+  .bar.mini { height: 5px; margin-top: 6px; }
+  .fill { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.35s ease, background-color 0.35s ease; }
+  .fill.done { background: var(--green); }
 
+  /* ---------- Namozlar ro'yxati ---------- */
   .prayerRow {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 14px 0; border-bottom: 1px solid #f0f0f0; gap: 10px;
+    display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px;
+    padding: 14px 0; border-bottom: 1px solid var(--border);
   }
   .prayerRow:last-child { border-bottom: none; }
-  .pName { font-size: 15px; font-weight: 600; flex: 1; }
+  .st-done { --st: var(--green); }
+  .st-near { --st: var(--accent); }
+  .st-mid  { --st: var(--orange); }
+  .st-high { --st: var(--red); }
+  .pName { font-size: 16px; font-weight: 600; }
+  .pMeta { font-size: 12px; color: var(--hint); margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .prayerRow .fill { background: var(--st); }
   .pCount {
-    font-size: 22px; font-weight: 700; color: #4f7cff; min-width: 54px; text-align: center;
-    cursor: pointer; border-bottom: 1px dashed #ccd3e0;
+    font-size: 24px; font-weight: 700; color: var(--st); min-width: 60px; text-align: center;
+    cursor: pointer; font-variant-numeric: tabular-nums; padding: 2px 4px;
+    border-bottom: 1px dashed var(--input-border);
   }
-  .pCount.zero { color: #2ecc71; }
-  .pBtns { display: flex; gap: 6px; }
+  .pBtns { display: flex; gap: 8px; }
   .pBtn {
-    width: 36px; height: 36px; border-radius: 10px; border: none; font-size: 18px;
-    font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 12px; border: none; font-size: 18px;
+    font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0;
   }
-  .pBtn.minus { background: #4f7cff; color: #fff; }
-  .pBtn.plus { background: #eef1f5; color: #888; }
+  .pBtn:active { transform: scale(0.94); }
+  .pBtn.minus { background: var(--accent); color: #fff; }
+  .pBtn.plus { background: var(--btn-soft); color: var(--btn-soft-text); }
 
-  .status { font-size: 12px; text-align: center; margin-top: 14px; min-height: 16px; font-weight: 600; }
-  .status.ok { color: #2ecc71; }
-  .status.fail { color: #e74c3c; }
+  /* ---------- Maqsad ---------- */
+  .goal { margin-top: 8px; padding: 14px; background: var(--input-bg); border-radius: 14px; }
+  .goalTitle { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+  .goalRow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .goalRow input {
+    width: 68px; padding: 9px 10px; font-size: 16px; text-align: center; font-weight: 600;
+    border: 1px solid var(--input-border); border-radius: 10px; background: var(--card); color: var(--text);
+  }
+  .seg { display: flex; background: var(--track); border-radius: 10px; padding: 3px; }
+  .seg button {
+    border: none; background: none; color: var(--hint); font-size: 13px; font-weight: 600;
+    padding: 7px 12px; border-radius: 8px; cursor: pointer;
+  }
+  .seg button.on { background: var(--card); color: var(--text); }
+  .goalUnit { font-size: 13px; color: var(--hint); }
+  .goalResult { margin-top: 12px; font-size: 14px; line-height: 1.4; }
+  .goalResult b { color: var(--accent); font-size: 16px; }
+  .goalResult .small { display: block; font-size: 12px; color: var(--hint); margin-top: 2px; }
+  .goalResult.done b { color: var(--green); }
 
-  .settingsLink {
-    display: block; text-align: center; margin-top: 16px; font-size: 12px; color: #999;
-    background: none; border: none; cursor: pointer; width: 100%;
+  .status { font-size: 12px; text-align: center; margin-top: 12px; min-height: 16px; font-weight: 600; }
+  .status.ok { color: var(--green); }
+  .status.fail { color: var(--red); }
+
+  .footerBtns { display: flex; gap: 8px; margin-top: 8px; }
+  .linkBtn {
+    flex: 1; padding: 11px 8px; font-size: 13px; color: var(--hint); background: none;
+    border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
   }
 
-  /* Setup / edit overlay */
+  /* ---------- Sozlash / tahrirlash oynalari ---------- */
   .overlay {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    position: fixed; inset: 0; background: var(--overlay);
     display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 10;
+    overflow-y: auto;
   }
   .overlay.hidden { display: none; }
   .overlayCard {
-    background: #fff; border-radius: 16px; padding: 20px; width: 100%; max-width: 380px;
+    background: var(--card); color: var(--text); border-radius: 18px; padding: 20px; width: 100%; max-width: 380px;
+    max-height: 100%; overflow-y: auto;
   }
-  .overlayCard h2 { font-size: 16px; margin: 0 0 14px; text-align: center; }
-  .setupRow {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px;
-  }
+  .overlayCard h2 { font-size: 17px; margin: 0 0 14px; text-align: center; }
+  .setupRow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
   .setupRow label { font-size: 14px; flex: 1; }
   .setupRow input {
-    width: 100px; padding: 8px 10px; border: 1px solid #ddd; border-radius: 8px;
-    font-size: 16px; text-align: right; background: #f7f8fa; color: #222;
+    width: 100px; padding: 9px 10px; border: 1px solid var(--input-border); border-radius: 10px;
+    font-size: 16px; text-align: right; background: var(--input-bg); color: var(--text);
   }
-  .dateCalc { background: #f7f8fa; border-radius: 10px; padding: 12px; margin-bottom: 14px; }
-  .dateCalcHint { font-size: 12px; color: #666; margin-bottom: 10px; line-height: 1.4; }
+  .dateCalc { background: var(--input-bg); border-radius: 12px; padding: 12px; margin-bottom: 14px; }
+  .dateCalcHint { font-size: 12px; color: var(--hint); margin-bottom: 10px; line-height: 1.4; }
   .dateCalc .setupRow input[type="date"] { width: 150px; font-size: 14px; }
-  .calcBtn {
-    margin-top: 4px; background: #e8edff !important; color: #4f7cff !important;
-    border-radius: 8px; padding: 10px; font-weight: 600;
-  }
-  .divider { height: 1px; background: #eee; margin: 14px 0; }
+  .calcBtn { background: var(--accent-soft) !important; color: var(--accent) !important; border-radius: 10px; padding: 11px; font-weight: 600; margin-top: 4px; }
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
   .overlayBtn {
-    width: 100%; padding: 12px; border: none; border-radius: 10px; background: #4f7cff;
+    width: 100%; padding: 13px; border: none; border-radius: 12px; background: var(--accent);
     color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 6px;
   }
   .overlayBtnSecondary {
-    width: 100%; padding: 10px; border: none; background: none; color: #999;
-    font-size: 13px; cursor: pointer; margin-top: 8px;
+    width: 100%; padding: 11px; border: none; background: none; color: var(--hint);
+    font-size: 13px; cursor: pointer; margin-top: 6px;
+  }
+  .editInput {
+    width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 1px solid var(--input-border);
+    border-radius: 10px; margin-bottom: 10px; background: var(--input-bg); color: var(--text);
   }
 </style>
 </head>
@@ -106,19 +179,37 @@
   <h1>🕌 Qazo namozlarim</h1>
   <div class="sub">Har o'qiganingizda "−1" tugmasini bosing</div>
 
-  <div class="progressWrap">
-    <div class="progressLabel">
-      <span>Jami qoldi: <b id="totalRemaining">0</b></span>
-      <span id="progressPct">0%</span>
+  <div class="hero">
+    <div class="heroTop">
+      <div class="heroPct" id="progressPct">0%</div>
+      <div class="heroInfo">
+        Qoldi: <b id="totalRemaining">0</b><br>
+        <span id="doneInfo">o'qilgan 0 / 0</span>
+      </div>
     </div>
-    <div class="progressBar"><div class="progressFill" id="progressFill" style="width:0%"></div></div>
+    <div class="bar big"><div class="fill" id="progressFill" style="width:0%"></div></div>
   </div>
 
   <div id="prayerList"></div>
 
+  <div class="goal">
+    <div class="goalTitle">🎯 Maqsad</div>
+    <div class="goalRow">
+      <input type="number" inputmode="numeric" id="goalInput" min="1" placeholder="5">
+      <span class="goalUnit">dona</span>
+      <div class="seg">
+        <button type="button" id="unitDay" class="on" onclick="setGoalUnit('day')">kuniga</button>
+        <button type="button" id="unitWeek" onclick="setGoalUnit('week')">haftasiga</button>
+      </div>
+    </div>
+    <div class="goalResult" id="goalResult"></div>
+  </div>
+
   <div class="status" id="statusMsg"></div>
-  <button class="settingsLink" onclick="openSetup(true)">⚙️ Sonlarni qayta sozlash</button>
-  <button class="settingsLink" onclick="exportPDF()">📄 PDF sifatida saqlash</button>
+  <div class="footerBtns">
+    <button class="linkBtn" onclick="openSetup(true)">⚙️ Sonlarni sozlash</button>
+    <button class="linkBtn" onclick="copyReportText()">📋 Nusxalash</button>
+  </div>
 </div>
 
 <div class="overlay hidden" id="setupOverlay">
@@ -149,29 +240,35 @@
 <div class="overlay hidden" id="editOverlay">
   <div class="overlayCard">
     <h2 id="editLabel">Qolgan sonni kiriting</h2>
-    <input type="number" inputmode="numeric" id="editInput" style="width:100%; padding:10px; font-size:16px; text-align:center; border:1px solid #ddd; border-radius:8px; margin-bottom:10px;">
+    <input type="number" inputmode="numeric" id="editInput" class="editInput">
     <button class="overlayBtn" onclick="saveEdit()">Saqlash</button>
     <button class="overlayBtnSecondary" onclick="closeEdit()">Bekor qilish</button>
-  </div>
-</div>
-
-<div class="overlay hidden" id="pdfOverlay">
-  <div class="overlayCard">
-    <h2>PDF tayyor</h2>
-    <p style="font-size:13px; color:#666; text-align:center; margin-bottom:16px;">
-      Pastdagi havolani bosing — brauzeringiz uni ochadi yoki saqlaydi.
-    </p>
-    <a id="pdfLink" href="#" download="qazo-namoz-hisobot.pdf" target="_blank"
-       class="overlayBtn" style="display:block; text-align:center; text-decoration:none;">
-      📄 PDF faylni ochish / yuklab olish
-    </a>
-    <button class="overlayBtnSecondary" onclick="closePdfOverlay()">Yopish</button>
   </div>
 </div>
 
 <script>
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) { tg.ready(); tg.expand(); }
+
+/* ---------- Tema (dark mode) ---------- */
+function applyTheme() {
+  let scheme = "light";
+  if (tg && tg.colorScheme) scheme = tg.colorScheme;
+  else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) scheme = "dark";
+  document.documentElement.setAttribute("data-theme", scheme);
+  if (tg) {
+    try {
+      const bg = getComputedStyle(document.documentElement).getPropertyValue("--bg").trim();
+      if (bg) { tg.setHeaderColor(bg); tg.setBackgroundColor(bg); }
+    } catch (e) {}
+  }
+}
+applyTheme();
+if (tg && tg.onEvent) tg.onEvent("themeChanged", applyTheme);
+if (window.matchMedia) {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", () => { if (!tg) applyTheme(); });
+}
 
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function (event) {
@@ -190,6 +287,8 @@ const PRAYERS = [
   { key: "shom", name: "Shom" },
   { key: "xufton", name: "Xufton" }
 ];
+
+const MONTHS = ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentyabr","oktyabr","noyabr","dekabr"];
 
 const hasCloud = !!(tg && tg.CloudStorage);
 
@@ -215,8 +314,15 @@ function cloudSet(key, value) {
 
 function origKey(k) { return "qazo_orig_" + k; }
 function remKey(k) { return "qazo_rem_" + k; }
+const GOAL_KEY = "qazo_goal";
+const GOAL_UNIT_KEY = "qazo_goal_unit";
 
 let data = {}; // { bomdod: {orig, rem}, ... }
+let goal = { value: null, unit: "day" };
+
+function fmt(n) {
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
 
 function setStatus(msg, cls) {
   const el = document.getElementById("statusMsg");
@@ -232,10 +338,23 @@ async function loadAll() {
       rem: remRaw !== null ? Number(remRaw) : null
     };
   }
+  const [goalRaw, unitRaw] = await Promise.all([cloudGet(GOAL_KEY), cloudGet(GOAL_UNIT_KEY)]);
+  const g = Number(goalRaw);
+  goal.value = goalRaw !== null && g > 0 ? g : null;
+  goal.unit = unitRaw === "week" ? "week" : "day";
 }
 
 function needsSetup() {
   return PRAYERS.some(p => data[p.key].orig === null);
+}
+
+/* Holat: qolgan ulush bo'yicha rang */
+function stateClass(orig, rem) {
+  if (rem === 0) return "st-done";
+  const share = orig > 0 ? rem / orig : 1;
+  if (share > 0.66) return "st-high";
+  if (share > 0.33) return "st-mid";
+  return "st-near";
 }
 
 function render() {
@@ -249,11 +368,18 @@ function render() {
     totalOrig += orig;
     totalRem += rem;
 
+    const donePart = orig > 0 ? Math.min(1, Math.max(0, (orig - rem) / orig)) : (rem === 0 ? 1 : 0);
+    const donePct = Math.round(donePart * 100);
+
     const row = document.createElement("div");
-    row.className = "prayerRow";
+    row.className = "prayerRow " + stateClass(orig, rem);
     row.innerHTML = `
-      <div class="pName">${p.name}</div>
-      <div class="pCount ${rem === 0 ? 'zero' : ''}" onclick="editCount('${p.key}')">${rem}</div>
+      <div class="pInfo">
+        <div class="pName">${p.name}</div>
+        <div class="pMeta">o'qilgan ${fmt(Math.max(0, orig - rem))} / ${fmt(orig)}</div>
+        <div class="bar mini"><div class="fill" style="width:${donePct}%"></div></div>
+      </div>
+      <div class="pCount" onclick="editCount('${p.key}')">${fmt(rem)}</div>
       <div class="pBtns">
         <button class="pBtn plus" onclick="bump('${p.key}', 1)">+</button>
         <button class="pBtn minus" onclick="bump('${p.key}', -1)">−1</button>
@@ -261,12 +387,100 @@ function render() {
     list.appendChild(row);
   });
 
-  document.getElementById("totalRemaining").textContent = totalRem;
-  const pct = totalOrig > 0 ? Math.round(((totalOrig - totalRem) / totalOrig) * 100) : 0;
-  document.getElementById("progressPct").textContent = pct + "%";
-  document.getElementById("progressFill").style.width = pct + "%";
+  const doneTotal = Math.max(0, totalOrig - totalRem);
+  const pct = totalOrig > 0 ? Math.min(100, Math.round((doneTotal / totalOrig) * 100)) : 0;
+  const allDone = totalOrig > 0 && totalRem === 0;
+
+  document.getElementById("totalRemaining").textContent = fmt(totalRem);
+  document.getElementById("doneInfo").textContent = "o'qilgan " + fmt(doneTotal) + " / " + fmt(totalOrig);
+  const pctEl = document.getElementById("progressPct");
+  pctEl.textContent = pct + "%";
+  pctEl.className = "heroPct" + (allDone ? " done" : "");
+  const fillEl = document.getElementById("progressFill");
+  fillEl.style.width = pct + "%";
+  fillEl.className = "fill" + (allDone ? " done" : "");
+
+  renderGoal(totalRem);
 }
 
+/* ---------- Maqsad va taxminiy tugash muddati ---------- */
+function formatDuration(days) {
+  if (days >= 365) {
+    const y = Math.floor(days / 365);
+    const m = Math.round((days % 365) / 30);
+    return y + " yil" + (m > 0 ? " " + m + " oy" : "");
+  }
+  if (days >= 30) {
+    const m = Math.floor(days / 30);
+    const d = days % 30;
+    return m + " oy" + (d > 0 ? " " + d + " kun" : "");
+  }
+  return days + " kun";
+}
+
+function formatDate(d) {
+  return d.getFullYear() + "-yil " + d.getDate() + "-" + MONTHS[d.getMonth()];
+}
+
+function renderGoal(totalRem) {
+  const input = document.getElementById("goalInput");
+  if (document.activeElement !== input) input.value = goal.value !== null ? goal.value : "";
+  document.getElementById("unitDay").classList.toggle("on", goal.unit === "day");
+  document.getElementById("unitWeek").classList.toggle("on", goal.unit === "week");
+
+  const box = document.getElementById("goalResult");
+  box.className = "goalResult";
+
+  if (totalRem === 0 && needsSetup() === false) {
+    box.classList.add("done");
+    box.innerHTML = "<b>Alhamdulillah!</b> 🎉<span class='small'>Barcha qazolar tugadi</span>";
+    return;
+  }
+  if (!goal.value) {
+    box.innerHTML = "<span class='small'>Necha dona o'qishni rejalashtirsangiz — qachon tugashini hisoblab beramiz (1 dona = 1 vaqt namoz)</span>";
+    return;
+  }
+  const perDay = goal.unit === "week" ? goal.value / 7 : goal.value;
+  const days = Math.ceil(totalRem / perDay);
+  const finish = new Date();
+  finish.setDate(finish.getDate() + days);
+  box.innerHTML = "Taxminan <b>" + fmt(days) + " kunda</b> tugaydi" +
+    "<span class='small'>" + formatDuration(days) + " • " + formatDate(finish) + "</span>";
+}
+
+async function saveGoal() {
+  try {
+    await cloudSet(GOAL_KEY, goal.value ? String(goal.value) : "");
+    await cloudSet(GOAL_UNIT_KEY, goal.unit);
+  } catch (e) {
+    setStatus("Xatolik: " + e.message, "fail");
+  }
+}
+
+function currentTotalRem() {
+  return PRAYERS.reduce((sum, p) => {
+    const orig = data[p.key].orig || 0;
+    return sum + (data[p.key].rem !== null ? data[p.key].rem : orig);
+  }, 0);
+}
+
+function setGoalUnit(unit) {
+  goal.unit = unit;
+  renderGoal(currentTotalRem());
+  saveGoal();
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("goalInput");
+  input.addEventListener("input", () => {
+    const v = Math.floor(Number(input.value));
+    goal.value = v > 0 ? v : null;
+    renderGoal(currentTotalRem());
+  });
+  input.addEventListener("change", saveGoal);
+});
+
+/* ---------- Saqlash va tahrirlash ---------- */
 async function persist(key, rem) {
   setStatus("Saqlanmoqda...", "");
   try {
@@ -391,70 +605,40 @@ async function saveSetup() {
   setTimeout(() => setStatus("", ""), 1200);
 }
 
-function exportPDF() {
-  if (!window.jspdf) {
-    showMsg("PDF kutubxonasi hali yuklanmadi. Internetni tekshirib, birozdan keyin qayta urinib ko'ring.");
-    return;
-  }
-  try {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    const today = new Date();
-    const dateStr = today.toLocaleDateString("uz-UZ") || today.toISOString().slice(0,10);
+function buildReportText() {
+  const today = new Date();
+  const dateStr = today.toLocaleDateString("uz-UZ") || today.toISOString().slice(0,10);
+  let lines = [];
+  lines.push("Qazo namozlarim hisoboti");
+  lines.push("Sana: " + dateStr);
+  lines.push("");
+  let totalOrig = 0, totalRem = 0;
+  PRAYERS.forEach(p => {
+    const orig = data[p.key].orig || 0;
+    const rem = data[p.key].rem !== null ? data[p.key].rem : orig;
+    const done = orig - rem;
+    totalOrig += orig; totalRem += rem;
+    lines.push(p.name + ": boshlang'ich " + orig + ", qolgan " + rem + ", o'qilgan " + done);
+  });
+  lines.push("");
+  lines.push("Jami boshlang'ich: " + totalOrig);
+  lines.push("Jami qolgan: " + totalRem);
+  lines.push("Jami o'qilgan: " + (totalOrig - totalRem));
+  return lines.join("\n");
+}
 
-    doc.setFontSize(16);
-    doc.text("Qazo namozlarim hisoboti", 20, 20);
-    doc.setFontSize(10);
-    doc.text("Sana: " + dateStr, 20, 28);
-
-    doc.setFontSize(11);
-    let y = 42;
-    doc.text("Namoz", 20, y);
-    doc.text("Boshlang'ich", 90, y);
-    doc.text("Qolgan", 130, y);
-    doc.text("O'qilgan", 165, y);
-    y += 4;
-    doc.line(20, y, 190, y);
-    y += 8;
-
-    let totalOrig = 0, totalRem = 0;
-    PRAYERS.forEach(p => {
-      const orig = data[p.key].orig || 0;
-      const rem = data[p.key].rem !== null ? data[p.key].rem : orig;
-      const done = orig - rem;
-      totalOrig += orig; totalRem += rem;
-      doc.text(p.name, 20, y);
-      doc.text(String(orig), 95, y);
-      doc.text(String(rem), 135, y);
-      doc.text(String(done), 170, y);
-      y += 9;
+function copyReportText() {
+  const text = buildReportText();
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      setStatus("Nusxalandi ✓ — istalgan joyga joylashtiring", "ok");
+      setTimeout(() => setStatus("", ""), 2000);
+    }).catch(() => {
+      showMsg(text);
     });
-
-    y += 2;
-    doc.line(20, y, 190, y);
-    y += 10;
-    doc.setFontSize(12);
-    doc.text("Jami boshlang'ich: " + totalOrig, 20, y);
-    y += 8;
-    doc.text("Jami qolgan: " + totalRem, 20, y);
-    y += 8;
-    doc.text("Jami o'qilgan: " + (totalOrig - totalRem), 20, y);
-
-    const dataUri = doc.output("datauristring");
-    showPdfLink(dataUri);
-  } catch (e) {
-    showMsg("PDF yaratishda xatolik: " + e.message);
+  } else {
+    showMsg(text);
   }
-}
-
-function showPdfLink(dataUri) {
-  const link = document.getElementById("pdfLink");
-  link.href = dataUri;
-  document.getElementById("pdfOverlay").classList.remove("hidden");
-}
-
-function closePdfOverlay() {
-  document.getElementById("pdfOverlay").classList.add("hidden");
 }
 
 async function init() {
