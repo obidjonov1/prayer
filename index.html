@@ -61,16 +61,16 @@
   .card {
     background: var(--card);
     border-radius: 18px;
-    padding: 20px 18px 16px;
+    padding: 14px 18px 12px;
     max-width: 440px;
     margin: 0 auto;
   }
-  h1 { font-size: 20px; font-weight: 700; margin: 0 0 4px; text-align: center; }
-  .sub { font-size: 13px; color: var(--hint); text-align: center; margin-bottom: 20px; }
+  h1 { font-size: 18px; font-weight: 700; margin: 0 0 2px; text-align: center; }
+  .sub { font-size: 12px; color: var(--hint); text-align: center; margin-bottom: 14px; }
 
   /* ---------- Umumiy taraqqiyot ---------- */
-  .hero { margin-bottom: 8px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
-  .heroTop { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  .hero { margin-bottom: 4px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .heroTop { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
   .heroPct { font-size: 34px; font-weight: 800; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
   .heroPct.done { color: var(--green); }
   .heroInfo { text-align: right; font-size: 13px; color: var(--hint); }
@@ -84,7 +84,7 @@
   /* ---------- Namozlar ro'yxati ---------- */
   .prayerRow {
     display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px;
-    padding: 14px 0; border-bottom: 1px solid var(--border);
+    padding: 10px 0; border-bottom: 1px solid var(--border);
   }
   .prayerRow:last-child { border-bottom: none; }
   .st-done { --st: var(--green); }
@@ -92,7 +92,6 @@
   .st-mid  { --st: var(--orange); }
   .st-high { --st: var(--red); }
   .pName { font-size: 16px; font-weight: 600; }
-  .pMeta { font-size: 12px; color: var(--hint); margin-top: 2px; font-variant-numeric: tabular-nums; }
   .prayerRow .fill { background: var(--st); }
   .pCount {
     font-size: 24px; font-weight: 700; color: var(--st); min-width: 60px; text-align: center;
@@ -141,6 +140,25 @@
   .linkBtn {
     flex: 1; padding: 11px 8px; font-size: 13px; color: var(--hint); background: none;
     border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+  }
+
+  /* ---------- Pastda yana narsa borligini bildiruvchi ishora ---------- */
+  .scrollHint {
+    position: fixed; left: 50%; bottom: max(14px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 14px; border-radius: 999px;
+    background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 600;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+    cursor: pointer; z-index: 6; border: none;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .scrollHint.show { opacity: 1; pointer-events: auto; }
+  .scrollHint .arrow { display: inline-block; animation: hintBounce 1.2s ease-in-out infinite; }
+  @keyframes hintBounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(3px); }
   }
 
   /* ---------- Sozlash / tahrirlash oynalari ---------- */
@@ -214,23 +232,27 @@
 
   <div class="status" id="statusMsg"></div>
   <div class="footerBtns">
-    <button class="linkBtn" onclick="openSetup(true)">⚙️ Kunlarni hisoblash</button>
+    <button class="linkBtn" onclick="openSetup(true)">⚙️ Sonlarni sozlash</button>
     <button class="linkBtn" onclick="copyReportText()">📋 Nusxalash</button>
   </div>
 </div>
+
+<button type="button" class="scrollHint" id="scrollHint" onclick="scrollToFooter()">
+  <span>Yana pastda</span><span class="arrow">⌄</span>
+</button>
 
 <div class="overlay hidden" id="setupOverlay">
   <div class="overlayCard">
     <h2>Qazo namozlar sonini kiriting</h2>
 
     <div class="dateCalc">
-      <div class="dateCalcHint">Aniq sonni bilmasangiz — ikkita sanani kiriting, kunlar sonidan avtomatik hisoblanadi (har kunga 5 vaqt):</div>
+      <div class="dateCalcHint">Aniq sonni bilmasangiz — ikkita sanani kiriting, kunlar sonidan avtomatik hisoblab beramiz (har kunga 5 vaqt):</div>
       <div class="setupRow">
         <label>Farz bo'lgan sana</label>
         <input type="date" id="calcStart">
       </div>
       <div class="setupRow">
-        <label>Namoz muntazam boshlangan sana</label>
+        <label>Muntazam boshlagan sana</label>
         <input type="date" id="calcEnd">
       </div>
       <button class="overlayBtnSecondary calcBtn" onclick="calcFromDates()">📅 Hisoblash va to'ldirish</button>
@@ -388,7 +410,6 @@ function render() {
     row.innerHTML = `
       <div class="pInfo">
         <div class="pName">${p.name}</div>
-        <div class="pMeta">o'qilgan ${fmt(Math.max(0, orig - rem))} / ${fmt(orig)}</div>
         <div class="bar mini"><div class="fill" style="width:${donePct}%"></div></div>
       </div>
       <div class="pCount" onclick="editCount('${p.key}')">${fmt(rem)}</div>
@@ -413,6 +434,7 @@ function render() {
   fillEl.className = "fill" + (allDone ? " done" : "");
 
   renderGoal(totalRem);
+  updateScrollHint();
 }
 
 /* ---------- Maqsad va taxminiy tugash muddati ---------- */
@@ -550,10 +572,12 @@ function openEditOverlay(key, label, current) {
   overlay.dataset.key = key;
   overlay.classList.remove("hidden");
   setTimeout(() => input.focus(), 50);
+  updateScrollHint();
 }
 
 function closeEdit() {
   document.getElementById("editOverlay").classList.add("hidden");
+  updateScrollHint();
 }
 
 async function saveEdit() {
@@ -603,10 +627,12 @@ function openSetup(isEdit) {
   });
   document.getElementById("cancelSetupBtn").style.display = isEdit ? "block" : "none";
   overlay.classList.remove("hidden");
+  updateScrollHint();
 }
 
 function closeSetup() {
   document.getElementById("setupOverlay").classList.add("hidden");
+  updateScrollHint();
 }
 
 async function saveSetup() {
@@ -675,12 +701,28 @@ function copyReportText() {
   }
 }
 
+function scrollToFooter() {
+  document.querySelector(".footerBtns").scrollIntoView({ block: "end", behavior: "smooth" });
+}
+
+function updateScrollHint() {
+  const hint = document.getElementById("scrollHint");
+  const overlayOpen = !document.getElementById("setupOverlay").classList.contains("hidden") ||
+                       !document.getElementById("editOverlay").classList.contains("hidden");
+  const hasMore = document.documentElement.scrollHeight > window.innerHeight + 40;
+  const nearBottom = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 30;
+  hint.classList.toggle("show", hasMore && !nearBottom && !overlayOpen);
+}
+window.addEventListener("scroll", updateScrollHint, { passive: true });
+window.addEventListener("resize", updateScrollHint);
+
 async function init() {
   await loadAll();
   if (needsSetup()) {
     openSetup(false);
   }
   render();
+  setTimeout(updateScrollHint, 200);
 }
 
 init();
