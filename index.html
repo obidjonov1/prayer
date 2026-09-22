@@ -11,7 +11,7 @@
     --bg: var(--tg-theme-secondary-bg-color, #f4f5f7);
     --card: var(--tg-theme-bg-color, #ffffff);
     --text: var(--tg-theme-text-color, #222222);
-    --hint: var(--tg-theme-hint-color, #8a8f98);
+    --hint: var(--tg-theme-hint-color, #45403a);
     --accent: #4f7cff;
     --accent-soft: #e8edff;
     --track: #e9edf3;
@@ -64,7 +64,9 @@
     padding: 14px 18px 12px;
     max-width: 440px;
     margin: 0 auto;
+    box-shadow: 0 20px 48px rgba(20, 20, 30, 0.16), 0 4px 14px rgba(20, 20, 30, 0.08);
   }
+  :root[data-theme="dark"] .card { box-shadow: none; }
   h1 { font-size: 18px; font-weight: 700; margin: 0 0 2px; text-align: center; }
   .sub { font-size: 12px; color: var(--hint); text-align: center; margin-bottom: 14px; }
 
@@ -232,7 +234,7 @@
 
   <div class="status" id="statusMsg"></div>
   <div class="footerBtns">
-    <button class="linkBtn" onclick="openSetup(true)">⚙️ Sonlarni sozlash</button>
+    <button class="linkBtn" onclick="openSetup(true)">⚙️ Kunlarni hisoblash</button>
     <button class="linkBtn" onclick="copyReportText()">📋 Nusxalash</button>
   </div>
 </div>
@@ -246,7 +248,7 @@
     <h2>Qazo namozlar sonini kiriting</h2>
 
     <div class="dateCalc">
-      <div class="dateCalcHint">Aniq sonni bilmasangiz — ikkita sanani kiriting, kunlar sonidan avtomatik hisoblab beramiz (har kunga 5 vaqt):</div>
+      <div class="dateCalcHint">Aniq kunni bilmasangiz — ikkita sanani kiriting, kunlar sonidan avtomatik hisoblanadi (har kunga 5 vaqt):</div>
       <div class="setupRow">
         <label>Farz bo'lgan sana</label>
         <input type="date" id="calcStart">
@@ -471,7 +473,7 @@ function renderGoal(totalRem) {
     return;
   }
   if (!goal.value) {
-    box.innerHTML = "<span class='small'>Necha dona o'qishni rejalashtirsangiz — qachon tugashini hisoblab beramiz (1 dona = 1 vaqt namoz)</span>";
+    box.innerHTML = "<span class='small'>Necha dona o'qishni rejalashtirsangiz — qachon tugashi hisoblanadi (1 dona = 1 vaqt namoz)</span>";
     return;
   }
   const perDay = goal.unit === "week" ? goal.value / 7 : goal.value;
